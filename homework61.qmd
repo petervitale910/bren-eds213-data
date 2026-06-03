@@ -1,0 +1,58 @@
+---
+title: "homework51"
+format: html
+---
+
+Who were the winners
+
+We need to find the winners
+
+First lets load the packages 
+```{r}
+pacman::p_load('dbplyr', 'tidyverse', 'DBI', 'duckdb')
+```
+
+## Connecting to database
+```{r}
+conn <- DBI::dbConnect(duckdb::duckdb(),
+                       dbdir = here::here('database', 'database.duckdb'))
+```
+
+
+```{r}
+egg_table <- tbl(conn, "Bird_eggs")
+nest_table <- tbl(conn, 'Bird_nests')
+personnel <- tbl(conn, 'personnel')
+```
+
+Now lets find the winners 
+
+```{r}
+winners <- egg_table %>% 
+  left_join(nest_table, by = 'Nest_ID') %>% 
+  group_by(Observer) %>% 
+  summarise(total_eggs = n()) %>% # Calculate before personnel
+  left_join(personnel, by = c("Observer" = 'Abbreviation')) %>% 
+  select(Name, total_eggs) %>% 
+  arrange(desc(total_eggs)) %>% 
+  head(3)
+  
+```
+
+Lets print the winners and the query
+
+```{r}
+print(winners)
+
+print(winners %>% show_query())
+```
+
+I did not use multiple statements, however I find it interesting that dbplyer didnt just select* from bird_eggs.
+
+## Closing the connection!!!!
+
+```{r}
+DBI::dbDisconnect(conn, shutdown = TRUE)
+```
+
+

@@ -1,0 +1,92 @@
+---
+title: "dbplyr"
+format: html
+---
+
+```{r}
+pacman::p_load('dbplyr', 'tidyverse', 'DBI', 'duckdb')
+```
+
+## Connecting to database
+```{r}
+conn <- DBI::dbConnect(duckdb::duckdb(),
+                       dbdir = here::here('database', 'database.duckdb'))
+```
+```{r}
+DBI::dbListTables(conn)
+```
+
+```{r}
+species <- tbl(conn, "Species") # sampling the first rows we need to .fetch to get everything
+species
+```
+not the real data, just a representation. 
+
+```{r}
+species_a <- dbGetQuery(conn,"SELECT * FROM Species WHERE Code LIKE 'a%'")
+
+species_a
+```
+
+## Dbplyr 
+
+```{r}
+species %>% 
+  filter(Relevance == 'Study species') %>% 
+  select(Code, Scientific_name) %>% 
+  arrange(Scientific_name) %>% 
+  head(3) %>% 
+  show_query() ## Shows query (SUPER COOOL)
+```
+We want a df
+```{r}
+species %>% 
+  filter(Relevance == 'Study species') %>% 
+  select(Code, Scientific_name) %>% 
+  arrange(Scientific_name) %>% 
+  head(3) %>% 
+  collect() ## Collects into df
+```
+
+## Group by and summarize
+```{r}
+species %>% 
+  group_by(Relevance) %>% 
+  summarize(num_species = n()) %>% 
+  #show_query()
+  collect()
+```
+
+Lets mutate
+```{r}
+species_x <- species %>%  ## Sets dataframe, but is read only did not update df.
+  mutate(Xcode = paste('X_', Code)) %>% 
+  collect()
+```
+
+Lets do a join:
+```{r}
+eggs_db <- tbl(conn, 'Bird_eggs')
+
+nest_db <- tbl(conn, 'Bird_nests')
+```
+
+
+```{r}
+nest_df <- nest_db %>% 
+  left_join(eggs_db, by = 'Nest_ID', keep = FALSE) %>% 
+  head(5) %>% 
+  #show_query()
+  collect()
+
+# Not always perfect
+```
+
+## Closing the connection!!!!
+
+```{r}
+DBI::dbDisconnect(conn, shutdown = TRUE)
+```
+
+
+

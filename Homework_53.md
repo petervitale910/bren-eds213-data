@@ -1,0 +1,2 @@
+Homework 5.3
+The queries all took a relatively similar amount of time over 1000, 5000, and 10000 repititions. If I had to say the fastest I would say outer_join as it took the average least amount of time.
